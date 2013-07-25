@@ -71,13 +71,13 @@ class UciController:
             word = data.pop(0)
             if word in keywords:
                 currentKeyword = word
-                continue
-            
-            if currentKeyword != None:
-                result[currentKeyword].push(word)
             else:
-                raise
+                if currentKeyword != None:
+                    result[currentKeyword].append(word)
+                else:
+                    raise Exception("Keyword not found")
             
+        print(result)
         return result
     
     def output(self, line):
@@ -116,14 +116,19 @@ class UciController:
         print("ucinewgame not implemented")
     
     def doPosition(self, data):
-        keyword = data.pop(0)
+        keyword = data[0]
         if keyword == 'startpos':
             self.engine.startPos()
+            subKeywords = {'moves' : data[2:]}
         elif keyword == 'fen':
-            self.engine.fenPos(" ".join(data))
+            subKeywords = self.parseKeywords(['fen', 'moves'], data)
+            self.engine.fenPos(" ".join(subKeywords['fen']))
         else:
             raise Exception("Invalid position type")
-        
+
+        for move in subKeywords['moves']:
+            self.engine.moveUCI(move)
+
         if self.debug:
             self.engine.printPosition()
     

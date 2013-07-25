@@ -38,8 +38,13 @@ class Engine():
     def printPosition(self):
         print("Not implemented")
         
+    def moveUCI(self, moveNotation):
+        """ Make the move given by the UCI string representation of the move (e.g. "e2e4") """
+        print("Not implemented")
+        
     def startAnalysis(self, stop_event):
         print("Not implemented")
+
         
 class SimpleEngine(Engine):
     
@@ -65,7 +70,7 @@ class SimpleEngine(Engine):
     BLACK = -1
     
     representation = { 0: " ", 1: "P", 2: "N", 3: "K", 5: "B", 6: "R", 7: "Q"}
-    fenRepresentation = {v:k for k, v in representation.items()} # flip keys and values
+    notationRepresentation = {v:k for k, v in representation.items()} # flip keys and values
     
     def startPos(self):
         pieces = [self.ROOK, self.KNIGHT, self.BISHOP, self.QUEEN, self.KING, self.BISHOP, self.KNIGHT, self.ROOK]
@@ -96,11 +101,11 @@ class SimpleEngine(Engine):
             part = boardParts[i]
             file = 0
             for c in list(part):
-                if c.upper() in self.fenRepresentation:
-                    self.board[file + 16*rank] = self.fenRepresentation[c.upper()] * (1 if c.istitle() else -1)
+                if c.upper() in self.notationRepresentation:
+                    self.board[file + 16*rank] = self.notationRepresentation[c.upper()] * (1 if c.istitle() else -1)
                 elif c.isdigit():
                     c = int(c)
-                    for s in range(c):
+                    for _ in range(c):
                         self.board[file + 16*rank] = 0
                         file += 1
                 else:
@@ -125,9 +130,7 @@ class SimpleEngine(Engine):
         # e.p. square
         epString = fenParts[3]
         if epString != '-':
-            file = ord(epString[0]) - ord('a')
-            rank = int(epString[1]) - 1
-            self.epSquare = file + 16*rank
+            self.epSquare = self._notationToSquare(fenParts[3])
             
         # half move
         if len(fenParts) > 4:
@@ -136,6 +139,13 @@ class SimpleEngine(Engine):
         # full move
         if len(fenParts) > 5:
             self.fullMove = int(fenParts[5])
+            
+    def _notationToSquare(self, notation):
+        """ Convert a two character algebraic square notation (e.g. "d4") to a board offset """
+
+        file = ord(notation[0]) - ord('a')
+        rank = int(notation[1]) - 1
+        return file + 16*rank
             
     def printPosition(self):
         
@@ -151,6 +161,48 @@ class SimpleEngine(Engine):
                 row.append(r)
             print("|" + "|".join(row) + "|")
         print(separator)
+        
+    def moveUCI(self, moveNotation):
+        frm = moveNotation[:2]
+        t = moveNotation[2:4]
+        move = [self._notationToSquare(frm), self._notationToSquare(t), None]
+        if len(t) > 4:
+            move[2] = self.notationRepresentation[t[4].upper()]
+        self.move(move)
+        
+    def move(self, move):
+        if move[0] == 7: self.castling[0] = False
+        if move[0] == 0: self.castling[1] = False
+        if move[0] == 119: self.castling[2] = False
+        if move[0] == 112: self.castling[3] = False
+        
+        if self.board[move[0]] == self.KING: 
+            self.castling[0:1] = [False, False]
+        
+        if self.board[move[0]] == -self.KING: 
+            self.castling[2:3] = [False, False]
+        
+        if abs(self.board[move[0]]) == self.PAWN or self.board[move[1]] != 0:
+            self.halfMove = 0
+            
+        if abs(self.board[move[0]]) == self.PAWN and (abs(move[1] - move[0]) == 32):
+            self.epSquare = (move[1] - move[0])/2 + move[0]
+        else:
+            self.epSquare = None
+            
+        # e.p. capture
+        if abs(self.board[move[0]]) == self.PAWN and self.epSquare == move[1] and abs(move[1] - move[0]) % 16 != 0:
+            epTakenPawn = (move[0] & 0x80) & (move[1] & 0x08) # move-from rank, move-to file
+            self.board[epTakenPawn] = 0
+
+        if move[2] == None:
+            self.board[move[1]] = self.board[move[0]]
+        else:
+            self.board[move[1]] = move[2] # pawn promotion
+            
+        self.board[move[0]] = 0
+    
+        
         
     def startAnalysis(self, stop_event):
         while (not stop_event.is_set()):
