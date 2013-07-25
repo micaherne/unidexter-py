@@ -9,6 +9,7 @@ import time
 from micaherne.unidexter.engine import Engine
 
 class UciController:
+    """ Analysis engine controller which speaks UCI """
     
     def __init__(self):
     
@@ -28,6 +29,9 @@ class UciController:
         self.debug = 0
         
         self.engine = None
+        
+    def setEngine(self, engine):
+        self.engine = engine
 
     def run(self):
         while 1:
@@ -56,10 +60,10 @@ class UciController:
         # TODO: We should silently ignore commands we don't understand (UCI spec)
         print("No valid command found")
     
-    '''
-    Given a list of keywords, parse the values into a dictionary
-    '''
+    
     def parseKeywords(self, keywords, data):
+        """ Given a list of keywords, parse the values into a dictionary """
+        
         result = {}
         for k in keywords:
             result[k] = []
@@ -93,11 +97,11 @@ class UciController:
         
     def doDebug(self, data):
         if data[0] == 'on':
-            debug = 1
+            self.debug = 1
             self.doInfo("string debugging switched on")
             
         if data[0] == 'off':
-            debug = 0
+            self.debug = 0
             self.doInfo("string debugging switched off")
     
     # Input commands
@@ -118,10 +122,10 @@ class UciController:
         print("position not implemented")
     
     def doGo(self, data):
-        print("go not implemented")
+        self.engine.go()
     
     def doStop(self, data):
-        print("stop not implemented")
+        self.engine.stop()
     
     def doPonderHit(self, data):
         print("ponderhit not implemented")
@@ -163,5 +167,6 @@ class UciController:
 # Just for testing
 if __name__ == '__main__':
     controller = UciController()
-    controller.engine = Engine()
+    engine = Engine()
+    controller.setEngine(engine)
     controller.run()
