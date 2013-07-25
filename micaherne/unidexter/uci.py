@@ -3,10 +3,10 @@ Created on 25 Jul 2013
 
 @author: michael
 '''
+from micaherne.unidexter.engine import SimpleEngine
 import sys
 import time
 
-from micaherne.unidexter.engine import Engine
 
 class UciController:
     """ Analysis engine controller which speaks UCI """
@@ -26,7 +26,7 @@ class UciController:
                     'quit' : self.doQuit
                     }
         
-        self.debug = 0
+        self.debug = 1 # TODO: Change back to zero
         
         self.engine = None
         
@@ -52,10 +52,7 @@ class UciController:
         while len(data) > 0:
             keyword = data.pop(0)
             if keyword in self.commands:
-                try:
-                    return self.commands[keyword](data)
-                except KeyError:
-                    print("Invalid command")
+                return self.commands[keyword](data)
     
         # TODO: We should silently ignore commands we don't understand (UCI spec)
         print("No valid command found")
@@ -119,7 +116,16 @@ class UciController:
         print("ucinewgame not implemented")
     
     def doPosition(self, data):
-        print("position not implemented")
+        keyword = data.pop(0)
+        if keyword == 'startpos':
+            self.engine.startPos()
+        elif keyword == 'fen':
+            self.engine.fenPos(" ".join(data))
+        else:
+            raise Exception("Invalid position type")
+        
+        if self.debug:
+            self.engine.printPosition()
     
     def doGo(self, data):
         self.engine.go()
@@ -167,6 +173,6 @@ class UciController:
 # Just for testing
 if __name__ == '__main__':
     controller = UciController()
-    engine = Engine()
+    engine = SimpleEngine()
     controller.setEngine(engine)
     controller.run()
