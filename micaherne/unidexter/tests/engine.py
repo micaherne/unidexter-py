@@ -26,6 +26,13 @@ class Test(unittest.TestCase):
         
     def testEp(self):
         fen = "position startpos moves e2e4 g8f6 e4e5 d7d5 e5d6"
+        
+    def testGenerateMoves(self):
+        self.engine.startPos()
+        #self.engine.moveUCI("d2d4")
+        #self.engine.moveUCI("d7d5")
+        moves = self.engine.generateMoves()
+        self.assertEqual(20, len(moves))
 
 
 if __name__ == "__main__":
