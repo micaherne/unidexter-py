@@ -21,9 +21,9 @@ class Engine():
         '''
         self.analysisThread = None
         
-    def go(self):
+    def go(self, params):
         self.stop_event = Event()
-        self.analysisThread = Thread(target=self.startAnalysis, args=[self.stop_event], group=None)
+        self.analysisThread = Thread(target=self.startAnalysis, args=[params, self.stop_event], group=None)
         self.analysisThread.start()
         
     def stop(self):
@@ -42,7 +42,7 @@ class Engine():
         """ Make the move given by the UCI string representation of the move (e.g. "e2e4") """
         print("Not implemented")
         
-    def startAnalysis(self, stop_event):
+    def startAnalysis(self, params, stop_event):
         print("Not implemented")
 
         
@@ -206,7 +206,8 @@ class SimpleEngine(Engine):
     
         
         
-    def startAnalysis(self, stop_event):
+    def startAnalysis(self, params, stop_event):
+        print(params)
         while (not stop_event.is_set()):
             self.count += 1
             time.sleep(0.01);

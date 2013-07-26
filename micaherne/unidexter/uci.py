@@ -59,17 +59,24 @@ class UciController:
     
     
     def parseKeywords(self, keywords, data):
-        """ Given a list of keywords, parse the values into a dictionary """
+        """ Given a list of keywords, parse the values into a dictionary. If the keyword
+            ends with a question mark we are looking for its existence as a flag
+        """
         
         result = {}
         for k in keywords:
-            result[k] = []
+            if '?' in k:
+                result[k.replace('?', '')] = False
+            else:
+                result[k] = []
         
         currentKeyword = None
         
         while len(data) > 0:
             word = data.pop(0)
-            if word in keywords:
+            if word + "?" in keywords:
+                result[word] = True
+            elif word in keywords:
                 currentKeyword = word
             else:
                 if currentKeyword != None:
@@ -132,7 +139,8 @@ class UciController:
             self.engine.printPosition()
     
     def doGo(self, data):
-        self.engine.go()
+        params = self.parseKeywords(['searchmoves', 'ponder?', 'wtime', 'btime', 'winc', 'binc', 'movestogo', 'depth', 'nodes', 'mate', 'movetime', 'infinite?'], data)
+        self.engine.go(params)
     
     def doStop(self, data):
         self.engine.stop()
