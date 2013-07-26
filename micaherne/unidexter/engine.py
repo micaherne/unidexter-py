@@ -358,6 +358,7 @@ class SimpleEngine(Engine):
                         
             # Castling
             # "castle-through" squares corresponding to self.castling. First value is king destination
+            # TODO: Make sure we're not in check first
             castlingSquares = [[0x06, 0x05], [0x02, 0x01, 0x03], [0x76, 0x75], [0x72, 0x71, 0x73]]
             for i in range(4):
                 if self.castling[i] == True:
@@ -367,6 +368,7 @@ class SimpleEngine(Engine):
                             canCastle = False
                             break
                     if canCastle:
+                        # TODO: validate moves don't castle through or into check
                         candidateMoves.append([moverKing, castlingSquares[i][0], None])
                     
             
@@ -383,19 +385,23 @@ class SimpleEngine(Engine):
                         captured = (m[0] & 0xF0) + (m[1] & 0x0F)
                         undo[captured] = self.board[captured]
                         self.board[captured] = 0
+                # TODO: Need to check moving through check here
                 self.board[m[1]] = self.board[m[0]]
                 self.board[m[0]] = 0
                 if not self.isCheck(moverKing):
                     result.append(m)
-                for k, v in undo.items():
-                    self.board[k] = v
+                for k in undo:
+                    self.board[k] = undo[k]
                 
         return result
     
     def isCheck(self, kingSquare):
-        """ Determine whether the given king is in check
+        """ Determine whether the given king is in check.
         """
         king = self.board[kingSquare]
+        if (abs(king) != self.KING):
+            raise Exception("Not a valid king square")
+        
         kingSign = math.copysign(1, king)
                     
         for m in self.KNIGHTMOVES:
