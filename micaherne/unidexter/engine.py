@@ -184,17 +184,19 @@ class SimpleEngine(Engine):
         
         if abs(self.board[move[0]]) == self.PAWN or self.board[move[1]] != 0:
             self.halfMove = 0
-            
+        
+        # e.p. capture
+        if abs(self.board[move[0]]) == self.PAWN and self.epSquare == move[1] and abs(move[1] - move[0]) % 16 != 0:
+            epTakenPawn = ((move[0] & 0xF0) + (move[1] & 0x0F)) # move-from rank, move-to file
+            self.board[epTakenPawn] = 0
+
+        # set e.p. square
         if abs(self.board[move[0]]) == self.PAWN and (abs(move[1] - move[0]) == 32):
             self.epSquare = (move[1] - move[0])/2 + move[0]
         else:
             self.epSquare = None
             
-        # e.p. capture
-        if abs(self.board[move[0]]) == self.PAWN and self.epSquare == move[1] and abs(move[1] - move[0]) % 16 != 0:
-            epTakenPawn = (move[0] & 0x80) & (move[1] & 0x08) # move-from rank, move-to file
-            self.board[epTakenPawn] = 0
-
+        
         if move[2] == None:
             self.board[move[1]] = self.board[move[0]]
         else:

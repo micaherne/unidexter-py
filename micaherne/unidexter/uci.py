@@ -76,8 +76,7 @@ class UciController:
                     result[currentKeyword].append(word)
                 else:
                     raise Exception("Keyword not found")
-            
-        print(result)
+
         return result
     
     def output(self, line):

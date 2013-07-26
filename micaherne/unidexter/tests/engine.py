@@ -24,12 +24,8 @@ class Test(unittest.TestCase):
         self.assertEqual(6, self.engine.board[0], "White rook on a1")
         self.assertEqual(68, self.engine.epSquare, "e.p. square is e5")
         
-    def testTemp(self):
-        a = "e2e4"
-        b = a[2:4]
-        self.assertEqual("e4", b, "Can't slice string properly")
-        c = a[:2]
-        self.assertEqual("e2", c, "Can't slice first bit properly")
+    def testEp(self):
+        fen = "position startpos moves e2e4 g8f6 e4e5 d7d5 e5d6"
 
 
 if __name__ == "__main__":
