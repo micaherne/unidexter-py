@@ -304,6 +304,7 @@ class SimpleEngine(Engine):
                         validSquares.append(self.epSquare)
                         
             # Castling
+            # TODO: This is in the wrong place. It should be above in the king part.
             # "castle-through" squares corresponding to self.castling. First value is king destination
             # TODO: Make sure we're not in check first
             castlingSquares = [[0x06, 0x05], [0x02, 0x01, 0x03], [0x76, 0x75], [0x72, 0x71, 0x73]]
