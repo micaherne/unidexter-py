@@ -78,6 +78,9 @@ class SimpleEngine(Engine):
     DIAGONALMOVES = [-17, -15, 15, 17]
     LINEARMOVES = [-16, -1, 1, 16]
     
+    PAWNQUEENINGRANKS = { WHITE: 0x70, BLACK: 0x00}
+    PAWNHOMERANKS = { WHITE: 0x10, BLACK: 0x60}
+        
     
     def startPos(self):
         pieces = [self.ROOK, self.KNIGHT, self.BISHOP, self.QUEEN, self.KING, self.BISHOP, self.KNIGHT, self.ROOK]
@@ -178,6 +181,8 @@ class SimpleEngine(Engine):
         self.move(move)
         
     def move(self, move):
+        undoData = {'castling': self.castling[:], 'fullMove' : self.fullMove, 'halfMove': self.halfMove, 'epSquare' : self.epSquare, 
+                    'whiteToMove' : self.whiteToMove, 'board': {move[0] : self.board[move[0]], move[1] : self.board[move[1]]}}
         if move[0] == 7: self.castling[0] = False
         if move[0] == 0: self.castling[1] = False
         if move[0] == 119: self.castling[2] = False
@@ -202,8 +207,7 @@ class SimpleEngine(Engine):
             self.epSquare = (move[1] - move[0])/2 + move[0]
         else:
             self.epSquare = None
-            
-        
+
         if move[2] == None:
             self.board[move[1]] = self.board[move[0]]
         else:
@@ -212,7 +216,17 @@ class SimpleEngine(Engine):
         self.board[move[0]] = 0
         
         self.whiteToMove = not self.whiteToMove
+        return undoData
     
+    def undoMove(self, undoData):
+        self.castling = undoData['castling']
+        self.fullMove = undoData['fullMove']
+        self.halfMove = undoData['halfMove']
+        self.epSquare = undoData['epSquare']
+        self.whiteToMove = undoData['whiteToMove']
+        for i in undoData['board']:
+            self.board[i] = undoData['board'][i]
+            
         
         
     def startAnalysis(self, params, stop_event):
@@ -251,103 +265,36 @@ class SimpleEngine(Engine):
                 piece = abs(piece)
             
             # Piece moves
-            if piece == 2:
-                if self.whiteToMove:
-                    validSquares = [moverSquare + x for x in self.KNIGHTMOVES if moverSquare + x >= 0 
-                                    and moverSquare + x & 0x88 == 0 and self.board[moverSquare + x] <= 0]
-                else:
-                    validSquares = [moverSquare + x for x in self.KNIGHTMOVES if moverSquare + x >= 0 
-                                    and moverSquare + x & 0x88 == 0 and self.board[moverSquare + x] >= 0]
-            
-            elif piece == 3:
-                if self.whiteToMove:
-                    validSquares = [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0
-                                    and moverSquare + x & 0x88 == 0 and self.board[moverSquare + x] <= 0]
-                else:
-                    validSquares = [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0 
-                                    and moverSquare + x & 0x88 == 0 and self.board[moverSquare + x] >= 0]
+            if piece == 2: # Knight
+                validSquares = [moverSquare + x for x in self.KNIGHTMOVES if moverSquare + x >= 0 
+                    and moverSquare + x & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
+            elif piece == 3: # King
+                validSquares = [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0
+                    and moverSquare + x & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
                  
             elif (abs(piece) & 4) != 0: # slider (abs needed so we don't pick up black pawns)
                 
                 if (piece & 1) != 0: # it can move diagonally
-                    currentSquares = [moverSquare + x for x in self.DIAGONALMOVES]
-                    safetyCount = 0; # should always terminate, but we want to be safe
-                    while currentSquares != [None]*4:
-                        for ts in range(4):
-                            if currentSquares[ts] == None:
-                                continue
-                            if currentSquares[ts] & 0x88 != 0:
-                                currentSquares[ts] = None
-                                continue
-                            if self.whiteToMove:
-                                if self.board[currentSquares[ts]] > 0:
-                                    currentSquares[ts] = None
-                                    continue
-                            else:
-                                if self.board[currentSquares[ts]] < 0:
-                                    currentSquares[ts] = None
-                                    continue
-                            currentSquares[ts] += self.DIAGONALMOVES[ts]
-
-                        validSquares += [x for x in currentSquares if x != None]
-                    
-                        safetyCount += 1
-                        assert safetyCount < 8
+                    validSquares += self.generateSliderMoves(moverSquare, self.DIAGONALMOVES)
                 
-                # TODO: Simplify? It's effectively same algorithm as diagonal sliders
                 if (piece & 2) != 0: # it can move linearly
-                    currentSquares = [moverSquare + x for x in self.LINEARMOVES]
-                    safetyCount = 0; # should always terminate, but we want to be safe
-                    while currentSquares != [None]*4:
-                        for ts in range(4):
-                            if currentSquares[ts] == None:
-                                continue
-                            if currentSquares[ts] & 0x88 != 0:
-                                currentSquares[ts] = None
-                                continue
-                            if self.whiteToMove:
-                                if self.board[currentSquares[ts]] > 0:
-                                    currentSquares[ts] = None
-                                    continue
-                            else:
-                                if self.board[currentSquares[ts]] < 0:
-                                    currentSquares[ts] = None
-                                    continue
-                            currentSquares[ts] += self.LINEARMOVES[ts]
-
-                        validSquares += [x for x in currentSquares if x != None]
-                        
-                        safetyCount += 1
-                        assert safetyCount < 8
+                    validSquares += self.generateSliderMoves(moverSquare, self.LINEARMOVES)
             
             # Pawn moves
+
             if abs(piece) == 1:
-                if self.whiteToMove:
-                    oneSquare = moverSquare + 16 
-                    if oneSquare >= 0 and oneSquare & 0x88 == 0 and self.board[oneSquare] == 0:
-                        # Add queening directly to candidate moves
-                        if (oneSquare & 0xF0) == 0x70: # queened
-                            for newPiece in [2, 5, 6, 7]:
-                                candidateMoves.append([moverSquare, oneSquare, newPiece]);
-                        else:
-                            validSquares.append(oneSquare)
-                        if (moverSquare & 0xF0) == 0x10: # it's on the 2nd rank
-                            twoSquares = moverSquare + 32 
-                            if twoSquares >= 0 and twoSquares & 0x88 == 0 and self.board[twoSquares] == 0:
-                                validSquares.append(twoSquares)
-                else:
-                    oneSquare = moverSquare - 16 
-                    if oneSquare >= 0 and oneSquare & 0x88 == 0 and self.board[oneSquare] == 0:
-                        # Add queening directly to result
-                        if (oneSquare & 0xF0) == 0x00: # queened
-                            for newPiece in [-2, -5, -6, -7]:
-                                candidateMoves.append([moverSquare, oneSquare, newPiece]);
-                        else:
-                            validSquares.append(oneSquare)
-                        if (moverSquare & 0xF0) == 0x60: # it's on the 2nd rank
-                            twoSquares = moverSquare - 32 
-                            if twoSquares >= 0 and twoSquares & 0x88 == 0 and self.board[twoSquares] == 0:
-                                validSquares.append(twoSquares)
+                oneSquare = moverSquare + (16 * moverSign)
+                if oneSquare >= 0 and oneSquare & 0x88 == 0 and self.board[oneSquare] == 0:
+                    # Add queening directly to candidate moves
+                    if (oneSquare & 0xF0) == self.PAWNQUEENINGRANKS[moverSign]:
+                        for newPiece in [2, 5, 6, 7]:
+                            candidateMoves.append([moverSquare, oneSquare, newPiece]);
+                    else:
+                        validSquares.append(oneSquare)
+                    if (moverSquare & 0xF0) == self.PAWNHOMERANKS[moverSign]: # it's on the 2nd rank
+                        twoSquares = moverSquare + (32 * moverSign)
+                        if twoSquares >= 0 and twoSquares & 0x88 == 0 and self.board[twoSquares] == 0:
+                            validSquares.append(twoSquares)
                 
                 # e.p. capture
                 if self.epSquare != None:
@@ -388,6 +335,9 @@ class SimpleEngine(Engine):
                 # TODO: Need to check moving through check here
                 self.board[m[1]] = self.board[m[0]]
                 self.board[m[0]] = 0
+                if (self.whiteToMove and self.board[m[1]] == self.KING) or (not self.whiteToMove and self.board[m[1]] == -self.KING):
+                    moverKing = m[1]
+                    print("Setting moverKing to ", moverKing)
                 if not self.isCheck(moverKing):
                     result.append(m)
                 for k in undo:
@@ -395,12 +345,44 @@ class SimpleEngine(Engine):
                 
         return result
     
+    def generateSliderMoves(self, square, moveList):
+        """ Generate the moves for a slider on the given square.
+            moveList param is self.LINEARMOVES or self.DIAGONALMOVES """
+            
+        result = []
+        currentSquares = [square + x for x in moveList]
+        safetyCount = 0; # should always terminate, but we want to be safe
+        while currentSquares != [None]*4:
+            for ts in range(4):
+                if currentSquares[ts] == None:
+                    continue
+                if currentSquares[ts] & 0x88 != 0:
+                    currentSquares[ts] = None
+                    continue
+                if self.whiteToMove:
+                    if self.board[currentSquares[ts]] > 0:
+                        currentSquares[ts] = None
+                        continue
+                else:
+                    if self.board[currentSquares[ts]] < 0:
+                        currentSquares[ts] = None
+                        continue
+                currentSquares[ts] += self.LINEARMOVES[ts]
+
+            result += [x for x in currentSquares if x != None]
+            
+            safetyCount += 1
+            assert safetyCount < 8
+            
+            return result
+    
     def isCheck(self, kingSquare):
         """ Determine whether the given king is in check.
         """
         king = self.board[kingSquare]
         if (abs(king) != self.KING):
-            raise Exception("Not a valid king square")
+            self.printPosition()
+            raise Exception("Not a valid king square :" + str(kingSquare) + " : " + str(self.board[kingSquare]))
         
         kingSign = math.copysign(1, king)
                     
