@@ -1,3 +1,4 @@
+
 '''
 Created on 29 Jul 2013
 
@@ -30,8 +31,15 @@ class Perft():
         return nodes
     
 if __name__ == '__main__':
+    file = open('perftsuite.epd', 'r')
     e = SimpleEngine()
-    e.startPos()
     p = Perft(e)
-    print(p.perft(2))
+    depth = 1
+    for line in file:
+        parts = line.split(';')
+        fen = parts[0]
+        e.fenPos(fen)
+        e.printPosition()
+        nodes = p.perft(depth)
+        print(nodes, parts[depth])
         
