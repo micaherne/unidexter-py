@@ -80,6 +80,10 @@ class SimpleEngine(Engine):
     
     PAWNQUEENINGRANKS = { WHITE: 0x70, BLACK: 0x00}
     PAWNHOMERANKS = { WHITE: 0x10, BLACK: 0x60}
+    PAWNQUEENINGPIECES = { WHITE: [2, 5, 6, 7], BLACK: [-2, -5, -6, -7]}
+    PAWNEPCAPTURES = { WHITE: [15, 17], BLACK: [-15, -17]}
+    
+    CASTLINGDESTSQUARE = [0x06, 0x02, 0x76, 0x72]
         
     
     def startPos(self):
@@ -182,7 +186,7 @@ class SimpleEngine(Engine):
         
     def move(self, move):
         undoData = {'castling': self.castling[:], 'fullMove' : self.fullMove, 'halfMove': self.halfMove, 'epSquare' : self.epSquare, 
-                    'whiteToMove' : self.whiteToMove, 'board': {move[0] : self.board[move[0]], move[1] : self.board[move[1]]}}
+                    'whiteToMove' : self.whiteToMove, 'board': {0 + move[0] : self.board[move[0]], 0 + move[1] : self.board[move[1]]}}
         if move[0] == 7: self.castling[0] = False
         if move[0] == 0: self.castling[1] = False
         if move[0] == 119: self.castling[2] = False
@@ -226,17 +230,15 @@ class SimpleEngine(Engine):
         self.whiteToMove = undoData['whiteToMove']
         for i in undoData['board']:
             self.board[i] = undoData['board'][i]
-            
-        
-        
+
     def startAnalysis(self, params, stop_event):
         print(params)
         while (not stop_event.is_set()):
             self.count += 1
             time.sleep(0.01);
         
-        print("Analysis stopped")
-        
+        print("Analysis stopped")                   
+            
     # Move generation
     def generateMoves(self):
         result = []
@@ -266,12 +268,13 @@ class SimpleEngine(Engine):
             
             # Piece moves
             if piece == 2: # Knight
-                validSquares = [moverSquare + x for x in self.KNIGHTMOVES if moverSquare + x >= 0 
+                validSquares += [moverSquare + x for x in self.KNIGHTMOVES if moverSquare + x >= 0 
                     and moverSquare + x & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
             elif piece == 3: # King
-                validSquares = [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0
+                validSquares += [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0
                     and moverSquare + x & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
-                 
+                # Added directly to result as these have to be checked for validity while generating
+                result += self.generateCastlingMoves(moverSquare)
             elif (abs(piece) & 4) != 0: # slider (abs needed so we don't pick up black pawns)
                 
                 if (piece & 1) != 0: # it can move diagonally
@@ -281,13 +284,12 @@ class SimpleEngine(Engine):
                     validSquares += self.generateSliderMoves(moverSquare, self.LINEARMOVES)
             
             # Pawn moves
-
             if abs(piece) == 1:
                 oneSquare = moverSquare + (16 * moverSign)
                 if oneSquare >= 0 and oneSquare & 0x88 == 0 and self.board[oneSquare] == 0:
                     # Add queening directly to candidate moves
                     if (oneSquare & 0xF0) == self.PAWNQUEENINGRANKS[moverSign]:
-                        for newPiece in [2, 5, 6, 7]:
+                        for newPiece in self.PAWNQUEENINGPIECES[moverSign]:
                             candidateMoves.append([moverSquare, oneSquare, newPiece]);
                     else:
                         validSquares.append(oneSquare)
@@ -298,27 +300,8 @@ class SimpleEngine(Engine):
                 
                 # e.p. capture
                 if self.epSquare != None:
-                    if self.whiteToMove and self.epSquare - moverSquare in [15, 17]:
-                        validSquares.append(self.epSquare)
-                    if not self.whiteToMove and moverSquare - self.epSquare in [15, 17]:
-                        validSquares.append(self.epSquare)
-                        
-            # Castling
-            # TODO: This is in the wrong place. It should be above in the king part.
-            # "castle-through" squares corresponding to self.castling. First value is king destination
-            # TODO: Make sure we're not in check first
-            castlingSquares = [[0x06, 0x05], [0x02, 0x01, 0x03], [0x76, 0x75], [0x72, 0x71, 0x73]]
-            for i in range(4):
-                if self.castling[i] == True:
-                    canCastle = True
-                    for s in castlingSquares[i]:
-                        if self.board[s] != 0:
-                            canCastle = False
-                            break
-                    if canCastle:
-                        # TODO: validate moves don't castle through or into check
-                        candidateMoves.append([moverKing, castlingSquares[i][0], None])
-                    
+                    if self.epSquare - moverSquare in self.PAWNEPCAPTURES[moverSign]:
+                        validSquares.append(self.epSquare)               
             
             # Add move items to result from validSquares [moverSquare, validSquares[i]
             for v in validSquares:
@@ -346,12 +329,44 @@ class SimpleEngine(Engine):
                 
         return result
     
+    def generateCastlingMoves(self, moverSquare):
+        result = []
+        # Can't castle out of check
+        if self.isCheck(moverSquare):
+            return result
+        if self.whiteToMove:
+            castlings = [1, 2]
+        else:
+            castlings = [3, 4]
+            
+        for i in castlings:
+            if not self.castling[i]:
+                continue
+            destinationSquare = self.CASTLINGDESTSQUARE[i]
+            betweenSquare = moverSquare + (destinationSquare - moverSquare) // 2
+            if self.board[destinationSquare] != 0 or self.board[betweenSquare] != 0:
+                continue
+            undoData = self.move([moverSquare, betweenSquare, None])
+            if self.isCheck(betweenSquare):
+                self.undoMove(undoData)
+                continue
+            self.undoMove(undoData)
+            undoData = self.move([moverSquare, destinationSquare, None])
+            if self.isCheck(destinationSquare):
+                self.undoMove(undoData)
+                continue
+            result.append([moverSquare, destinationSquare, None])
+        
+        return result
+            
+    
     def generateSliderMoves(self, square, moveList):
         """ Generate the moves for a slider on the given square.
             moveList param is self.LINEARMOVES or self.DIAGONALMOVES """
             
         result = []
         currentSquares = [square + x for x in moveList]
+        movingPiece = self.board[square]
         safetyCount = 0; # should always terminate, but we want to be safe
         while currentSquares != [None]*4:
             for ts in range(4):
@@ -360,14 +375,9 @@ class SimpleEngine(Engine):
                 if currentSquares[ts] & 0x88 != 0:
                     currentSquares[ts] = None
                     continue
-                if self.whiteToMove:
-                    if self.board[currentSquares[ts]] > 0:
-                        currentSquares[ts] = None
-                        continue
-                else:
-                    if self.board[currentSquares[ts]] < 0:
-                        currentSquares[ts] = None
-                        continue
+                if self.board[currentSquares[ts]] * movingPiece > 0:
+                    currentSquares[ts] = None
+                    continue
                 currentSquares[ts] += self.LINEARMOVES[ts]
 
             result += [x for x in currentSquares if x != None]

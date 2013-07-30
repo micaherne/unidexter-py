@@ -32,6 +32,8 @@ class Test(unittest.TestCase):
         #self.engine.moveUCI("d2d4")
         #self.engine.moveUCI("d7d5")
         moves = self.engine.generateMoves()
+        for m in moves:
+            print(m[0], m[1])
         self.assertEqual(20, len(moves))
 
 
