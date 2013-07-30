@@ -345,6 +345,7 @@ class SimpleEngine(Engine):
             if self.isCheck(destinationSquare):
                 self.undoMove(undoData)
                 continue
+            self.undoMove(undoData)
             result.append([moverSquare, destinationSquare, None])
         
         return result
