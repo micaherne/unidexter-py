@@ -39,7 +39,12 @@ class Test(unittest.TestCase):
         moves = self.engine.generateMoves()
         self.assertEqual(20, len(moves))
         
-        
+    def testGenerateCastlingMoves(self):
+        fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+        self.engine.fenPos(fen)
+        moves = self.engine.generateCastlingMoves(4)
+        self.assertEqual(2, len(moves), "Both white castling moves found")
+
         
     def testMove(self):
         self.engine.startPos()

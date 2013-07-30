@@ -372,7 +372,7 @@ class SimpleEngine(Engine):
                 result.append(currentSquares[ts])
                 currentSquares[ts] += moveList[ts]
             safetyCount += 1
-            assert safetyCount < 8
+            assert safetyCount <= 8
 
         return result
     
