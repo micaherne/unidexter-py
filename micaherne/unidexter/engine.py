@@ -406,7 +406,7 @@ class SimpleEngine(Engine):
         
         # Pawn attacks
         for m in [int(kingSign*x) for x in [15, 17]]:
-            if self.board[kingSquare + m] == (-1 * kingSign):
+            if kingSquare + m & 0x88 == 0 and self.board[kingSquare + m] == (-1 * kingSign):
                 return True
             
         return False
