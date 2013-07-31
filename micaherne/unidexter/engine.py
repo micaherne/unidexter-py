@@ -183,6 +183,18 @@ class SimpleEngine(Engine):
         if len(t) > 4:
             move[2] = self.notationRepresentation[t[4].upper()]
         return self.move(move)
+    
+    def toUCINotation(self, move):
+        parts = [move[0] & 0x0F, ((move[0] & 0xF0) >> 4) + 1, move[1] & 0x0F, ((move[1] & 0xF0) >> 4) + 1]
+        ordA = ord('a')
+        parts[0] += ordA
+        parts[0] = chr(parts[0])
+        parts[2] += ordA
+        parts[2] = chr(parts[2])
+        if len(move) > 2 and move[2] != None:
+            promotedPiece = self.notationRepresentation(abs(move[2]))
+            parts.append(promotedPiece)
+        return "".join(map(str, parts))
         
     def move(self, move):
         undoData = {'castling': self.castling[:], 'fullMove' : self.fullMove, 'halfMove': self.halfMove, 'epSquare' : self.epSquare, 
