@@ -28,10 +28,11 @@ class Perft():
             undoData = self.engine.move(m)
             nodes += self.perft(depth - 1)
             self.engine.undoMove(undoData)
-            # print(self.engine.toUCINotation(m))
+            #print(self.engine.toUCINotation(m))
         return nodes
     
 if __name__ == '__main__':
+    results = [0]*2
     file = open('perftsuite.epd', 'r')
     e = SimpleEngine()
     p = Perft(e)
@@ -40,7 +41,18 @@ if __name__ == '__main__':
         parts = line.split(';')
         fen = parts[0]
         e.fenPos(fen)
+        print(fen)
         e.printPosition()
         nodes = p.perft(depth)
+        depthParts = parts[depth].split()
+        correctNodes = int(depthParts[1])
         print(nodes, parts[depth])
+        if correctNodes == nodes:
+            print("Correct!")
+            results[0] += 1
+        else:
+            print("Incorrect!")
+            results[1] += 1
+    print(results[0], " correct, ", results[1], " incorrect")         
+            
         

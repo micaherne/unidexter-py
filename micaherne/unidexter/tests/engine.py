@@ -78,6 +78,22 @@ class Test(unittest.TestCase):
         for m in moves:
             self.assertNotEqual(4, m, "Can't move to king square")
 
+    def testPerftPos1(self):
+        fen = "4k3/8/8/8/8/8/8/4K2R w K - 0 1"
+        self.engine.fenPos(fen)
+        moves = self.engine.generateSliderMoves(7, self.engine.LINEARMOVES)
+        self.assertEqual(9, len(moves), "Generate rook moves")
+        moves = self.engine.generateMoves()
+        self.assertEqual(15, len(moves), "Generate all moves")
+        
+    def testPerftPos2(self):
+        fen = "7k/RR6/8/8/8/8/rr6/7K w - - 0 1"
+        self.engine.fenPos(fen)
+        moves = self.engine.generateSliderMoves(96, self.engine.LINEARMOVES)
+        self.assertNotIn(0, moves, "a1 shouldn't be in moves")
+        moves = self.engine.generateMoves()
+        self.assertEqual(19, len(moves), "Correct number of moves")
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testEngine']
     unittest.main()

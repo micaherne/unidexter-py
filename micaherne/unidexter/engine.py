@@ -291,10 +291,10 @@ class SimpleEngine(Engine):
                 result += self.generateCastlingMoves(moverSquare)
             elif (abs(piece) & 4) != 0: # slider (abs needed so we don't pick up black pawns)
                 
-                if (piece & 1) != 0: # it can move diagonally
+                if (abs(piece) & 1) != 0: # it can move diagonally
                     validSquares += self.generateSliderMoves(moverSquare, self.DIAGONALMOVES)
                 
-                if (piece & 2) != 0: # it can move linearly
+                if (abs(piece) & 2) != 0: # it can move linearly
                     validSquares += self.generateSliderMoves(moverSquare, self.LINEARMOVES)
             
             # Pawn moves
@@ -384,6 +384,10 @@ class SimpleEngine(Engine):
                 if self.board[currentSquares[ts]] * movingPiece > 0:
                     currentSquares[ts] = None
                     continue
+                if self.board[currentSquares[ts]] * movingPiece < 0:
+                    result.append(currentSquares[ts])
+                    currentSquares[ts] = None
+                    continue
                 result.append(currentSquares[ts])
                 currentSquares[ts] += moveList[ts]
             safetyCount += 1
@@ -394,6 +398,7 @@ class SimpleEngine(Engine):
     def isCheck(self, kingSquare):
         """ Determine whether the given king is in check.
         """
+
         king = self.board[kingSquare]
         if (abs(king) != self.KING):
             self.printPosition()
@@ -406,17 +411,25 @@ class SimpleEngine(Engine):
             if (testSquare & 0x88) == 0 and self.board[testSquare] == -1 * kingSign * self.KNIGHT:
                 return True
             
+        # King "checks"
+        for m in self.DIAGONALMOVES + self.LINEARMOVES:
+            testSquare = kingSquare + m
+            if (testSquare & 0x88) == 0 and self.board[testSquare] == -1 * kingSign * self.KING:
+                return True
+
         for m in self.DIAGONALMOVES:
             first = self.firstPiece(kingSquare, m)
-            if first != None and first > 2:
+            if first != None and abs(first) & 4 != 0:
                 if math.copysign(1, first) != kingSign and (abs(first) & 1) != 0:
                     return True
                 
         for m in self.LINEARMOVES:
             first = self.firstPiece(kingSquare, m)
-            if first != None and first > 2:
+            if first != None and abs(first) & 4 != 0:
                 if math.copysign(1, first) != kingSign and (abs(first) & 2) != 0:
                     return True
+                
+
         
         # Pawn attacks
         for m in [int(kingSign*x) for x in [15, 17]]:
