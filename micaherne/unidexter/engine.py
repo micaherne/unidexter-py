@@ -83,7 +83,8 @@ class SimpleEngine(Engine):
     PAWNQUEENINGPIECES = { WHITE: [2, 5, 6, 7], BLACK: [-2, -5, -6, -7]}
     PAWNCAPTURES = { WHITE: [15, 17], BLACK: [-15, -17]}
     
-    CASTLINGDESTSQUARE = [0x06, 0x02, 0x76, 0x72]
+    # Squares that need to be blank for castling. First entry is king destination
+    CASTLINGSQUARES = [[0x06, 0x05], [0x02, 0x01, 0x03], [0x76, 0x75], [0x72, 0x71, 0x73]]
         
     
     def startPos(self):
@@ -198,12 +199,12 @@ class SimpleEngine(Engine):
         
     def move(self, move):
         undoData = {'castling': self.castling[:], 'fullMove' : self.fullMove, 'halfMove': self.halfMove, 'epSquare' : self.epSquare, 
-                    'whiteToMove' : self.whiteToMove, 'board': {0 + move[0] : self.board[move[0]], 0 + move[1] : self.board[move[1]]}}
+                    'whiteToMove' : self.whiteToMove, 'board': {move[0] : self.board[move[0]], move[1] : self.board[move[1]]}}
         if move[0] == 7: self.castling[0] = False
         if move[0] == 0: self.castling[1] = False
-        if move[0] == 119: self.castling[2] = False
-        if move[0] == 112: self.castling[3] = False
-        
+        if move[0] == 0x77: self.castling[2] = False
+        if move[0] == 0x70: self.castling[3] = False
+                
         if move[0] == 4 and self.board[move[0]] == self.KING: 
             self.castling[0] = False
             self.castling[1] = False
@@ -239,7 +240,9 @@ class SimpleEngine(Engine):
         # e.p. capture
         if abs(self.board[move[0]]) == self.PAWN and self.epSquare == move[1] and abs(move[1] - move[0]) % 16 != 0:
             epTakenPawn = ((move[0] & 0xF0) + (move[1] & 0x0F)) # move-from rank, move-to file
+            undoData['board'][epTakenPawn] = self.board[epTakenPawn]
             self.board[epTakenPawn] = 0
+            self.epSquare = None
 
         # set e.p. square
         if abs(self.board[move[0]]) == self.PAWN and (abs(move[1] - move[0]) == 32):
@@ -369,14 +372,27 @@ class SimpleEngine(Engine):
         if self.isCheck(moverSquare):
             return result
         if self.whiteToMove:
+            sideToMove = self.WHITE
             castlings = [0, 1]
         else:
+            sideToMove = self.BLACK
             castlings = [2, 3]
+            
+        if self.board[moverSquare] != (sideToMove * self.KING):
+            return result
             
         for i in castlings:
             if not self.castling[i]:
                 continue
-            destinationSquare = self.CASTLINGDESTSQUARE[i]
+            mustBeEmpty = self.CASTLINGSQUARES[i]
+            empty = True
+            for sq in mustBeEmpty:
+                if self.board[sq] != 0:
+                    empty = False
+                    continue
+            if not empty:
+                continue
+            destinationSquare = mustBeEmpty[0]
             betweenSquare = moverSquare + (destinationSquare - moverSquare) // 2
             if self.board[destinationSquare] != 0 or self.board[betweenSquare] != 0:
                 continue

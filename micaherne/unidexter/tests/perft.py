@@ -32,13 +32,14 @@ class Perft():
         return nodes
     
     def divide(self, depth):
-        if(depth < 2):
-            raise Exception("Can't divide depth < 2")
         moves = self.engine.generateMoves()
         nodeCount = 0
         for m in moves:
             undoData = self.engine.move(m)
-            m2 = self.perft(depth - 1)
+            if(depth < 2):
+                m2 = 1
+            else:
+                m2 = self.perft(depth - 1)
             nodeCount += m2
             print(self.engine.toUCINotation(m), m2)
             self.engine.undoMove(undoData)
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     file = open('perftsuite.epd', 'r')
     e = SimpleEngine()
     p = Perft(e)
-    depth = 2
+    depth = 3
     for line in file:
         parts = line.split(';')
         fen = parts[0]

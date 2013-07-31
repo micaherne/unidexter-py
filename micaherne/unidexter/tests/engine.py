@@ -77,6 +77,13 @@ class Test(unittest.TestCase):
         moves = self.engine.generateSliderMoves(0, self.engine.LINEARMOVES)
         for m in moves:
             self.assertNotEqual(4, m, "Can't move to king square")
+            
+    def testGenerateCastlingMoves2(self):
+        self.engine.fenPos('4k2r/8/8/8/8/8/8/5K2 b k - 0 1')
+        moves = self.engine.generateCastlingMoves(0x74)
+        self.assertEqual([False, False, True, False], self.engine.castling, "Black K-side castling should be set")
+        self.assertEqual(1, len(moves), "Should be one valid move")
+        self.assertIn([0x74, 0x76], moves, "Should have h5h7")
 
     def testPerftPos1(self):
         fen = "4k3/8/8/8/8/8/8/4K2R w K - 0 1"
