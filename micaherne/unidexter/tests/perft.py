@@ -28,7 +28,7 @@ class Perft():
             undoData = self.engine.move(m)
             nodes += self.perft(depth - 1)
             self.engine.undoMove(undoData)
-            print(self.engine.toUCINotation(m))
+            # print(self.engine.toUCINotation(m))
         return nodes
     
 if __name__ == '__main__':

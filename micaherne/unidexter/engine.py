@@ -285,6 +285,8 @@ class SimpleEngine(Engine):
             elif piece == 3: # King
                 validSquares += [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0
                     and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
+                validSquares += [moverSquare + x for x in self.LINEARMOVES if moverSquare + x >= 0
+                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
                 # Added directly to result as these have to be checked for validity while generating
                 result += self.generateCastlingMoves(moverSquare)
             elif (abs(piece) & 4) != 0: # slider (abs needed so we don't pick up black pawns)
