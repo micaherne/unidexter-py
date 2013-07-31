@@ -204,11 +204,34 @@ class SimpleEngine(Engine):
         if move[0] == 119: self.castling[2] = False
         if move[0] == 112: self.castling[3] = False
         
-        if self.board[move[0]] == self.KING: 
-            self.castling[0:1] = [False, False]
+        if move[0] == 4 and self.board[move[0]] == self.KING: 
+            self.castling[0] = False
+            self.castling[1] = False
+            # Make castling rook moves
+            if move[1] == 6:
+                undoData['board'][7] = self.board[7]
+                undoData['board'][5] = self.board[5]
+                self.board[5] = self.board[7]
+                self.board[7] = 0
+            if move[1] == 2:
+                undoData['board'][0] = self.board[0]
+                undoData['board'][3] = self.board[3]
+                self.board[3] = self.board[0]
+                self.board[0] = 0
         
-        if self.board[move[0]] == -self.KING: 
-            self.castling[2:3] = [False, False]
+        if move[0] == 0x74 and self.board[move[0]] == -self.KING: 
+            self.castling[2] = False
+            self.castling[3] = False
+            if move[1] == 0x76:
+                undoData['board'][0x77] = self.board[0x77]
+                undoData['board'][0x75] = self.board[0x75]
+                self.board[0x75] = self.board[0x77]
+                self.board[0x77] = 0
+            if move[1] == 0x72:
+                undoData['board'][0x70] = self.board[0x70]
+                undoData['board'][0x73] = self.board[0x73]
+                self.board[0x73] = self.board[0x70]
+                self.board[0x70] = 0
         
         if abs(self.board[move[0]]) == self.PAWN or self.board[move[1]] != 0:
             self.halfMove = 0
@@ -256,14 +279,14 @@ class SimpleEngine(Engine):
         result = []
         moverPieceLocations = []
         
-        moverSign = self.WHITE if self.whiteToMove else self.BLACK
+        sideToMove = self.WHITE if self.whiteToMove else self.BLACK
             
         for rank in range(8):
             for file in range(8):
                 square = (rank << 4) + file
                 if self.board[square] == 0:
                     continue
-                if math.copysign(1, self.board[square]) == moverSign:
+                if math.copysign(1, self.board[square]) == sideToMove:
                     moverPieceLocations.append(square)
                     if abs(self.board[square]) == self.KING:
                         moverKingStartSquare = square
@@ -281,12 +304,12 @@ class SimpleEngine(Engine):
             # Piece moves
             if piece == 2: # Knight
                 validSquares += [moverSquare + x for x in self.KNIGHTMOVES if moverSquare + x >= 0 
-                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
+                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * sideToMove) <= 0]
             elif piece == 3: # King
                 validSquares += [moverSquare + x for x in self.DIAGONALMOVES if moverSquare + x >= 0
-                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
+                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * sideToMove) <= 0]
                 validSquares += [moverSquare + x for x in self.LINEARMOVES if moverSquare + x >= 0
-                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * moverSign) <= 0]
+                    and (moverSquare + x) & 0x88 == 0 and (self.board[moverSquare + x] * sideToMove) <= 0]
                 # Added directly to result as these have to be checked for validity while generating
                 result += self.generateCastlingMoves(moverSquare)
             elif (abs(piece) & 4) != 0: # slider (abs needed so we don't pick up black pawns)
@@ -299,29 +322,30 @@ class SimpleEngine(Engine):
             
             # Pawn moves
             if abs(piece) == 1:
-                oneSquare = moverSquare + (16 * moverSign)
+                pawnMoves = []
+                oneSquare = moverSquare + (16 * sideToMove)
                 if oneSquare >= 0 and oneSquare & 0x88 == 0 and self.board[oneSquare] == 0:
-                    pawnMoves = [oneSquare]
-                    if (moverSquare & 0xF0) == self.PAWNHOMERANKS[moverSign]: # it's on the 2nd rank
-                        twoSquares = moverSquare + (32 * moverSign)
+                    pawnMoves.append(oneSquare)
+                    if (moverSquare & 0xF0) == self.PAWNHOMERANKS[sideToMove]: # it's on the 2nd rank
+                        twoSquares = moverSquare + (32 * sideToMove)
                         if twoSquares >= 0 and twoSquares & 0x88 == 0 and self.board[twoSquares] == 0:
                             pawnMoves.append(twoSquares)
                             
-                    for cap in self.PAWNCAPTURES:
-                        captureSquare = moverSquare + (cap * moverSign)
-                        if captureSquare >= 0 and captureSquare & 0x88 == 0 and (self.board[captureSquare] * moverSign) < 0:
-                            pawnMoves.append(captureSquare)
-                        if captureSquare == self.epSquare:
-                            pawnMoves.append(captureSquare)
-                    
-                    for m in pawnMoves:        
-                        # Add queening directly to candidate moves
-                        # TODO: Could improve performance: test for check once and add moves direct to result?
-                        if (m & 0xF0) == self.PAWNQUEENINGRANKS[moverSign]:
-                            for newPiece in self.PAWNQUEENINGPIECES[moverSign]:
-                                candidateMoves.append([moverSquare, oneSquare, newPiece]);
-                        else:
-                            validSquares.append(m)
+                for cap in self.PAWNCAPTURES[sideToMove]:
+                    captureSquare = moverSquare + cap
+                    if captureSquare >= 0 and captureSquare & 0x88 == 0 and (self.board[captureSquare] * sideToMove) < 0:
+                        pawnMoves.append(captureSquare)
+                    if captureSquare == self.epSquare:
+                        pawnMoves.append(captureSquare)
+                
+                for m in pawnMoves:        
+                    # Add queening directly to candidate moves
+                    # TODO: Could improve performance: test for check once and add moves direct to result?
+                    if (m & 0xF0) == self.PAWNQUEENINGRANKS[sideToMove]:
+                        for newPiece in self.PAWNQUEENINGPIECES[sideToMove]:
+                            candidateMoves.append([moverSquare, m, newPiece]);
+                    else:
+                        validSquares.append(m)
             
             # Add move items to result from validSquares [moverSquare, validSquares[i]
             for v in validSquares:
@@ -331,7 +355,7 @@ class SimpleEngine(Engine):
             for m in candidateMoves:
                 moverKing = moverKingStartSquare
                 undoData = self.move(m)
-                if self.board[m[1]] == (self.KING * moverSign):
+                if self.board[m[1]] == (self.KING * sideToMove):
                     moverKing = m[1]
                 if not self.isCheck(moverKing):
                     result.append(m)
@@ -404,7 +428,7 @@ class SimpleEngine(Engine):
     def isCheck(self, kingSquare):
         """ Determine whether the given king is in check.
         """
-
+        
         king = self.board[kingSquare]
         if (abs(king) != self.KING):
             self.printPosition()

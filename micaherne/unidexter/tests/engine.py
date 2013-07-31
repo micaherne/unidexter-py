@@ -94,6 +94,24 @@ class Test(unittest.TestCase):
         moves = self.engine.generateMoves()
         self.assertEqual(19, len(moves), "Correct number of moves")
         
+    def testPerftPos3(self):
+        fen = "k7/8/8/7p/6P1/8/8/K7 w - - 0 1"
+        self.engine.fenPos(fen)
+        #self.engine.printPosition()
+        moves = self.engine.generateMoves();
+        self.assertEqual(5, len(moves), "5 moves generated")
+        
+    def testMove2(self):
+        fen = "4k3/8/8/8/8/8/8/R3K3 w Q - 0 1"
+        self.engine.fenPos(fen)
+        self.engine.moveUCI("e1c1")
+        self.assertEqual(6, self.engine.board[3])
+        
+    def testMove3(self):
+        self.engine.fenPos('4k3/8/8/8/8/8/8/R3K3 w Q - 0 1 ')
+        self.engine.moveUCI("e1d1")
+        self.assertEqual([False] * 4, self.engine.castling)
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testEngine']
     unittest.main()

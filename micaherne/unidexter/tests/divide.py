@@ -1,0 +1,22 @@
+'''
+Created on 31 Jul 2013
+
+@author: michael
+'''
+
+from micaherne.unidexter.tests.perft import Perft
+from micaherne.unidexter.engine import Engine, SimpleEngine
+
+if __name__ == '__main__':
+    e = SimpleEngine()
+    p = Perft(e)
+    #e.fenPos('r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1')
+    #e.moveUCI("e8g8")
+    #e.fenPos('r4rk1/8/8/8/8/8/8/R3K2R w KQ - 0 1')
+    #e.fenPos('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ')
+    e.fenPos('4k3/8/8/8/8/8/8/R3K3 w Q - 0 1 ')
+    e.moveUCI("e1d1")
+    #e.fenPos('4k3/8/8/8/8/8/8/R2K4 b - - 0 1 ')
+    e.printPosition()
+    p.divide(2)
+    
