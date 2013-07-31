@@ -81,7 +81,7 @@ class SimpleEngine(Engine):
     PAWNQUEENINGRANKS = { WHITE: 0x70, BLACK: 0x00}
     PAWNHOMERANKS = { WHITE: 0x10, BLACK: 0x60}
     PAWNQUEENINGPIECES = { WHITE: [2, 5, 6, 7], BLACK: [-2, -5, -6, -7]}
-    PAWNEPCAPTURES = { WHITE: [15, 17], BLACK: [-15, -17]}
+    PAWNCAPTURES = { WHITE: [15, 17], BLACK: [-15, -17]}
     
     CASTLINGDESTSQUARE = [0x06, 0x02, 0x76, 0x72]
         
@@ -301,21 +301,27 @@ class SimpleEngine(Engine):
             if abs(piece) == 1:
                 oneSquare = moverSquare + (16 * moverSign)
                 if oneSquare >= 0 and oneSquare & 0x88 == 0 and self.board[oneSquare] == 0:
-                    # Add queening directly to candidate moves
-                    if (oneSquare & 0xF0) == self.PAWNQUEENINGRANKS[moverSign]:
-                        for newPiece in self.PAWNQUEENINGPIECES[moverSign]:
-                            candidateMoves.append([moverSquare, oneSquare, newPiece]);
-                    else:
-                        validSquares.append(oneSquare)
+                    pawnMoves = [oneSquare]
                     if (moverSquare & 0xF0) == self.PAWNHOMERANKS[moverSign]: # it's on the 2nd rank
                         twoSquares = moverSquare + (32 * moverSign)
                         if twoSquares >= 0 and twoSquares & 0x88 == 0 and self.board[twoSquares] == 0:
-                            validSquares.append(twoSquares)
-                
-                # e.p. capture
-                if self.epSquare != None:
-                    if self.epSquare - moverSquare in self.PAWNEPCAPTURES[moverSign]:
-                        validSquares.append(self.epSquare)
+                            pawnMoves.append(twoSquares)
+                            
+                    for cap in self.PAWNCAPTURES:
+                        captureSquare = moverSquare + (cap * moverSign)
+                        if captureSquare >= 0 and captureSquare & 0x88 == 0 and (self.board[captureSquare] * moverSign) < 0:
+                            pawnMoves.append(captureSquare)
+                        if captureSquare == self.epSquare:
+                            pawnMoves.append(captureSquare)
+                    
+                    for m in pawnMoves:        
+                        # Add queening directly to candidate moves
+                        # TODO: Could improve performance: test for check once and add moves direct to result?
+                        if (m & 0xF0) == self.PAWNQUEENINGRANKS[moverSign]:
+                            for newPiece in self.PAWNQUEENINGPIECES[moverSign]:
+                                candidateMoves.append([moverSquare, oneSquare, newPiece]);
+                        else:
+                            validSquares.append(m)
             
             # Add move items to result from validSquares [moverSquare, validSquares[i]
             for v in validSquares:
