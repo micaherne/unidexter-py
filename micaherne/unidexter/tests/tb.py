@@ -68,10 +68,15 @@ class Engine():
 			if p.pieceType == Piece.KING:
 				maxMoves = 1
 			if p.pieceType & 2: # linear slider
+				result.append(self.generateLinearMoves(p, maxMoves))
 				pass
 			if p.pieceType & 1: # diagonal slider
 				pass
 				
+		return result
+	
+	def generateLinearMoves(self, piece, maxMoves):
+		result = []
 		return result
 			
 	def fromFEN(self, fen):
