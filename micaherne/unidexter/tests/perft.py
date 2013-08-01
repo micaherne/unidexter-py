@@ -52,7 +52,7 @@ if __name__ == '__main__':
     file = open('perftsuite.epd', 'r')
     e = SimpleEngine()
     p = Perft(e)
-    depth = 3
+    depth = 4
     for line in file:
         parts = line.split(';')
         fen = parts[0]
