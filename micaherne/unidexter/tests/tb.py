@@ -1,9 +1,9 @@
 class Engine():
 
-	r = None
-	f = None # file
-	d1 = None # diagonals a1h8 
-	d2 = None # diagonals a8h1
+	r = None # rank:    direction (1, 0)
+	f = None # file:    direction (0, 1)
+	d1 = None # diagonals a1h8    (1, 1)
+	d2 = None # diagonals a8h1    (1, -1)
 	set = None
 	wtm = None
 	castling = None

@@ -154,6 +154,7 @@ class SimpleEngine(Engine):
         # full move
         if len(fenParts) > 5:
             self.fullMove = int(fenParts[5])
+    
             
     def _notationToSquare(self, notation):
         """ Convert a two character algebraic square notation (e.g. "d4") to a board offset """
@@ -200,10 +201,10 @@ class SimpleEngine(Engine):
     def move(self, move):
         undoData = {'castling': self.castling[:], 'fullMove' : self.fullMove, 'halfMove': self.halfMove, 'epSquare' : self.epSquare, 
                     'whiteToMove' : self.whiteToMove, 'board': {move[0] : self.board[move[0]], move[1] : self.board[move[1]]}}
-        if move[0] == 7: self.castling[0] = False
-        if move[0] == 0: self.castling[1] = False
-        if move[0] == 0x77: self.castling[2] = False
-        if move[0] == 0x70: self.castling[3] = False
+        if move[0] == 7 or move[1] == 7: self.castling[0] = False
+        if move[0] == 0 or move[1] == 0: self.castling[1] = False
+        if move[0] == 0x77 or move[1] == 0x77: self.castling[2] = False
+        if move[0] == 0x70 or move[1] == 0x70: self.castling[3] = False
                 
         if move[0] == 4 and self.board[move[0]] == self.KING: 
             self.castling[0] = False

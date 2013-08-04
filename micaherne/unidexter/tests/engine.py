@@ -54,7 +54,20 @@ class Test(unittest.TestCase):
         self.assertEqual(87, self.engine.epSquare, "e.p. square set")
         self.engine.undoMove(undoData)
         self.assertEqual(39, self.engine.epSquare, "e.p. square set")
+        
+        self.engine.fenPos('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ')
+        self.engine.printPosition()
+        self.engine.moveUCI("e5f7")
+        self.engine.printPosition();
+        
+        engine2 = SimpleEngine()
+        engine2.fenPos('r3k2r/p1ppqNb1/bn2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1')
 
+        engine2.printPosition()
+    
+        for i in range(128):
+            self.assertEqual(self.engine.board[i], engine2.board[i], "Not the same " + str(i))
+            
     def testUndo(self):
         self.engine.startPos()
         undoData = self.engine.move([20, 52, None])
@@ -83,7 +96,7 @@ class Test(unittest.TestCase):
         moves = self.engine.generateCastlingMoves(0x74)
         self.assertEqual([False, False, True, False], self.engine.castling, "Black K-side castling should be set")
         self.assertEqual(1, len(moves), "Should be one valid move")
-        self.assertIn([0x74, 0x76], moves, "Should have h5h7")
+        #self.assertIn([0x74, 0x76], moves, "Should have h5h7")
 
     def testPerftPos1(self):
         fen = "4k3/8/8/8/8/8/8/4K2R w K - 0 1"

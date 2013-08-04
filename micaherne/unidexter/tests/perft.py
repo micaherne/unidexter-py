@@ -49,10 +49,10 @@ class Perft():
     
 if __name__ == '__main__':
     results = [0]*2
-    file = open('perftsuite.epd', 'r')
+    file = open('min-perftsuite.epd', 'r')
     e = SimpleEngine()
     p = Perft(e)
-    depth = 4
+    depth = 5
     for line in file:
         parts = line.split(';')
         fen = parts[0]
