@@ -495,3 +495,6 @@ class SimpleEngine(Engine):
             currentSquare += direction
 
         return None
+    
+
+        
